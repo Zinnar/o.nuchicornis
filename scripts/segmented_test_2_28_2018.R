@@ -84,3 +84,5 @@ ggplot(or, aes(x=pronot.log, y=horn.log))+
   geom_point(color="red")+
   geom_point(data=wa, aes(x=pronot.log, y=horn.log), color="blue")
 
+library(nls2)
+library(nlstools)
