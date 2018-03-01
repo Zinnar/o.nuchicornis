@@ -54,7 +54,7 @@ wa.model<-nls(horn.l~ y0 +((a*pronot.l^b)/(c^b+pronot.l^b)),
               start=list(y0=min(wa$horn.l), a=range(wa$horn.l), b=1.09696, c=0.878), nls.control(warnOnly=TRUE))
 shapiro.test(residuals(wa.model))
 
-
+##this one breaks and I'm not sure whyyyyy
 or.model<-nls(horn.l~ y0 +((a*pronot.l^b)/(c^b+pronot.l^b)),
               data=or,
               start=list(y0=min(or$horn.l), a=range(or$horn.l), b=1.10221, c=0.863), nls.control(warnOnly=TRUE))
