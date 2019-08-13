@@ -1,0 +1,77 @@
+---
+title: "Evaluating Sigmoidal Allometry following Knell 2008, using split breakpoints suggested by Kijimoto"
+author: "RAZ"
+date: "August 13, 2019"
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(segmented)
+```
+
+```{r, echo=FALSE}
+dung<- read.table("../data/o_nuchicornis_male_measurements_set1_feb17_2016.csv", header= TRUE , sep= ",")
+dung$latitude <- as.factor(dung$latitude)
+dung$longitude <- as.factor(dung$longitude)
+dung$farm.code <- as.factor(dung$farm.code)
+dung$location.code <- as.factor(dung$location.code)
+dung$year <- as.factor(dung$year)
+dung <-subset(dung, location != "BC")
+dung<- dung[order(dung$latitude),]
+dung$horn.log<-log(dung$horn.l)
+dung$pronot.log<-log(dung$pronot.l)
+```
+
+First I'm going to separate the data based on location (Oregon vs Washington) and see how well the breakpoint model works for both of them, and see if the breakpoints predicted by the model are similar. 
+
+```{r}
+dung.wa <- subset(dung, location=="wa")
+dung.or <- subset(dung, location=="or")
+```
+
+I'm going to fit a model to each set of data
+
+```{r}
+lin.mod.wa<-lm(horn.log~pronot.log, data=dung.wa)
+break.mod.wa<-segmented.lm(lin.mod.wa, seg.Z = ~pronot.log, psi=(-0.3))
+quad.mod.wa<-lm(horn.log~poly(pronot.log,2), data=dung.wa)
+AIC(lin.mod.wa,break.mod.wa,quad.mod.wa)
+
+lin.mod.or<-lm(horn.log~pronot.log, data=dung.or)
+break.mod.or<-segmented.lm(lin.mod.or, seg.Z = ~pronot.log, psi=(-0.3))
+quad.mod.or<-lm(horn.log~poly(pronot.log,2), data=dung.or)
+AIC(lin.mod.or,break.mod.or,quad.mod.or)
+```
+
+Hooray, for both models, the breakpoint analysis had the lowest AIC!
+Time to extract the breakponts for each model and see if they're different (going to have to eyeball them)
+
+Let's look at summary statistics for the models
+```{r}
+print.segmented(break.mod.wa)
+print.segmented(break.mod.or)
+```
+
+Okay, so the breakpoints for these models are -0.173 for the Washington data set and -0.178 for the Oregon data set. When I had them combined the breakpoint was -0.176. I'm feeling pretty confident at this point that my previous analysis works, and that there isn't a separate breakpoint for the two locations. 
+
+Let's look at a plot- and remember, pay attention to where the two dashed lines (the two fitted models) change slope. That's the breakpoint, and that's what Kijimoto suggested we investigate for differences. 
+
+
+```{r}
+break.fit.wa<-fitted(break.mod.wa)
+fitted.data.wa<-data.frame(LogPrthx=dung.wa$pronot.log, HornFit=break.fit.wa)
+break.fit.or<-fitted(break.mod.or)
+fitted.data.or<-data.frame(LogPrthx=dung.or$pronot.log, HornFit=break.fit.or)
+
+
+ggplot(dung, aes(x=pronot.log, y=horn.log))+
+  geom_point(aes(color=location))+
+  geom_line(data=fitted.data.wa, aes(x=LogPrthx, y=HornFit), lty=2)+
+  geom_line(data=fitted.data.or, aes(x=LogPrthx, y=HornFit), lty=3)
+
+
+```
+
+The breakpoints seem visually very similar. You will note that the two lines seem to diverge below and above this breakpoint, and you're not wrong! If we go back to our previous analysis, those are the two lines I compared, and found nothing different below the breakpoint, but a location difference ABOVE the breakpoint. I feel validated, and I think we can now consider the analysis "done". I can make the graphs prettier, combine them with the Slopes ~ latitude graph, and I can write up a methods for it. 
